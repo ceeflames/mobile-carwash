@@ -1,10 +1,12 @@
 from sqlalchemy.orm import Session
-from fastapi import HTTPException
-
 from app.core.security import (
     create_access_token,
     hash_password,
     verify_password,
+)
+from app.exceptions.custom_exceptions import (
+    ConflictException,
+    UnauthorizedException,
 )
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
@@ -23,17 +25,15 @@ class AuthService:
         )
 
         if existing_user:
-            raise HTTPException(
-                status_code=400,
-                detail="Email already registered."
+            raise ConflictException(
+                "Email already registered."
             )
         existing_phone = self.user_repository.get_by_phone(
             data.phone
         )
         if existing_phone:
-            raise HTTPException(
-                status_code=400,
-                detail="Phone number already registered."
+            raise ConflictException(
+                "Phone number already registered."
             )
             
 
@@ -53,18 +53,16 @@ class AuthService:
         )
 
         if not user:
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid email or password."
+            raise UnauthorizedException(
+                "Invalid email or password."
             )
 
         if not verify_password(
             data.password,
             user.password_hash,
         ):
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid email or password."
+            raise UnauthorizedException(
+                "Invalid email or password."
             )
 
         token = create_access_token(
