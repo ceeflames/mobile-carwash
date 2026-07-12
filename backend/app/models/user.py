@@ -51,4 +51,10 @@ class User(BaseModel):
     "Vehicle",
     back_populates="owner",
     cascade="all, delete",
+    )
+    
+    addresses = relationship(
+    "Address",
+    back_populates="user",
+    cascade="all, delete-orphan",
 )
