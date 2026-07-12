@@ -12,11 +12,13 @@ app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
 )
+from app.middleware.logging import log_requests
 
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(vehicles_router)
 register_exception_handlers(app)
+app.middleware("http")(log_requests)
 
 
 @app.get("/")
