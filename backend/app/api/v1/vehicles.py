@@ -3,14 +3,12 @@ from uuid import UUID
 from fastapi import (
     APIRouter,
     Depends,
-    HTTPException,
-    status,
 )
-
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.dependencies.auth import get_current_user
+from app.schemas.response import ApiResponse
 from app.schemas.vehicle import (
     VehicleCreate,
     VehicleResponse,
@@ -23,9 +21,10 @@ router = APIRouter(
     tags=["Vehicles"],
 )
 
+
 @router.post(
     "",
-    response_model=VehicleResponse,
+    response_model=ApiResponse[VehicleResponse],
 )
 def create_vehicle(
     vehicle: VehicleCreate,
@@ -35,35 +34,41 @@ def create_vehicle(
 
     service = VehicleService(db)
 
-    try:
-        return service.create(
-            current_user,
-            vehicle,
-        )
+    created_vehicle = service.create(
+        current_user,
+        vehicle,
+    )
 
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        )
-    
+    return ApiResponse(
+        success=True,
+        message="Vehicle created successfully.",
+        data=created_vehicle,
+    )
+
+
 @router.get(
     "",
-    response_model=list[VehicleResponse],
+    response_model=ApiResponse[list[VehicleResponse]],
 )
-    
 def get_my_vehicles(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
 
-        service = VehicleService(db)
+    service = VehicleService(db)
 
-        return service.get_my_vehicles(current_user)
+    vehicles = service.get_my_vehicles(current_user)
+
+    return ApiResponse(
+        success=True,
+        message="Vehicles retrieved successfully.",
+        data=vehicles,
+    )
+
 
 @router.put(
     "/{vehicle_id}",
-    response_model=VehicleResponse,
+    response_model=ApiResponse[VehicleResponse],
 )
 def update_vehicle(
     vehicle_id: UUID,
@@ -74,20 +79,23 @@ def update_vehicle(
 
     service = VehicleService(db)
 
-    try:
-        return service.update(
-            vehicle_id,
-            current_user,
-            vehicle,
-        )
+    updated_vehicle = service.update(
+        vehicle_id,
+        current_user,
+        vehicle,
+    )
 
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        )
-    
-@router.delete("    /{vehicle_id}")
+    return ApiResponse(
+        success=True,
+        message="Vehicle updated successfully.",
+        data=updated_vehicle,
+    )
+
+
+@router.delete(
+    "/{vehicle_id}",
+    response_model=ApiResponse[None],
+)
 def delete_vehicle(
     vehicle_id: UUID,
     db: Session = Depends(get_db),
@@ -96,16 +104,13 @@ def delete_vehicle(
 
     service = VehicleService(db)
 
-    try:
-        service.delete(
-            vehicle_id,
-            current_user,
-        )
+    service.delete(
+        vehicle_id,
+        current_user,
+    )
 
-        return {"detail": "Vehicle deleted successfully."}
-
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        )
+    return ApiResponse(
+        success=True,
+        message="Vehicle deleted successfully.",
+        data=None,
+    )
