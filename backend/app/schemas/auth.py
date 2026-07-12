@@ -20,10 +20,15 @@ class Token(BaseModel):
 
 
 class UserResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
     id: UUID
     first_name: str
     last_name: str
-    email: EmailStr
+    email: str
     phone: str
+    is_active: bool
+    email_verified: bool
+    phone_verified: bool
+
+    model_config = {
+        "from_attributes": True
+    }
