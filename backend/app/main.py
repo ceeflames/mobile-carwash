@@ -16,6 +16,13 @@ from app.middleware.logging import log_requests
 from app.api.v1.addresses import (
     router as addresses_router,
 )
+from app.api.v1.service_packages import (
+    router as service_package_router,
+)
+
+from app.api.v1.admin_service_packages import (
+    router as admin_service_package_router,
+)
 
 app.include_router(auth_router)
 app.include_router(admin_router)
@@ -23,6 +30,8 @@ app.include_router(vehicles_router)
 register_exception_handlers(app)
 app.middleware("http")(log_requests)
 app.include_router(addresses_router)
+app.include_router(service_package_router)
+app.include_router(admin_service_package_router)
 
 
 @app.get("/")

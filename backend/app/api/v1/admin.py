@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from app.dependencies.roles import RoleChecker
+from app.dependencies.roles import require_roles
 from app.models.enums import UserRole
 
 router = APIRouter(
@@ -12,7 +12,7 @@ router = APIRouter(
 @router.get("/dashboard")
 def dashboard(
     user=Depends(
-        RoleChecker(
+        require_roles(
             [
                 UserRole.ADMIN,
                 UserRole.SUPER_ADMIN,

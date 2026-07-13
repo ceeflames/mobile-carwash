@@ -1,22 +1,25 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 
 from app.dependencies.auth import get_current_user
+from app.exceptions.custom_exceptions import ForbiddenException
 from app.models.enums import UserRole
+from app.models.user import User
 
 
-class RoleChecker:
+def require_roles(*allowed_roles: UserRole):
+    """
+    Restrict an endpoint to one or more user roles.
+    """
 
-    def __init__(self, allowed_roles):
+    def role_checker(
+        current_user: User = Depends(get_current_user),
+    ) -> User:
 
-        self.allowed_roles = allowed_roles
-
-    def __call__(self, user=Depends(get_current_user)):
-
-        if user.role not in self.allowed_roles:
-
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Permission denied.",
+        if current_user.role not in allowed_roles:
+            raise ForbiddenException(
+                "You do not have permission to access this resource."
             )
 
-        return user
+        return current_user
+
+    return role_checker

@@ -2,10 +2,11 @@ from enum import Enum
 
 
 class UserRole(str, Enum):
-    CUSTOMER = "CUSTOMER"
-    WASHER = "WASHER"
-    ADMIN = "ADMIN"
-    SUPER_ADMIN = "SUPER_ADMIN"
+    CUSTOMER = "customer"
+    WASHER = "washer"
+    DISPATCHER = "dispatcher"
+    ADMIN = "admin"
+    SUPER_ADMIN = "super_admin"
 
 
 class VehicleType(str, Enum):
