@@ -69,3 +69,8 @@ class Address(BaseModel):
         "User",
         back_populates="addresses",
     )
+
+    bookings = relationship(
+        "Booking",
+        back_populates="address",
+    )

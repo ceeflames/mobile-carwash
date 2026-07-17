@@ -1,36 +1,41 @@
 from uuid import UUID
 
-from sqlalchemy.orm import Session
-
 from app.models.service_package import ServicePackage
+from app.repositories.base_repository import BaseRepository
 
 
-class ServicePackageRepository:
-
-    def __init__(self, db: Session):
-        self.db = db
+class ServicePackageRepository(BaseRepository):
 
     def create(
         self,
         service_package: ServicePackage,
-    ):
-        self.db.add(service_package)
-        self.db.commit()
-        self.db.refresh(service_package)
+    ) -> ServicePackage:
+
+        self.add(service_package)
+        self.flush()
+        self.refresh(service_package)
 
         return service_package
 
-    def get_all(self):
+    def get_all(
+        self,
+    ) -> list[ServicePackage]:
+
         return (
             self.db.query(ServicePackage)
             .order_by(ServicePackage.name)
             .all()
         )
 
-    def get_active(self):
+    def get_active(
+        self,
+    ) -> list[ServicePackage]:
+
         return (
             self.db.query(ServicePackage)
-            .filter(ServicePackage.is_active == True)
+            .filter(
+                ServicePackage.is_active == True
+            )
             .order_by(ServicePackage.name)
             .all()
         )
@@ -38,35 +43,45 @@ class ServicePackageRepository:
     def get_by_id(
         self,
         package_id: UUID,
-    ):
+    ) -> ServicePackage | None:
+
         return (
             self.db.query(ServicePackage)
-            .filter(ServicePackage.id == package_id)
+            .filter(
+                ServicePackage.id == package_id
+            )
             .first()
         )
 
     def get_by_name(
         self,
         name: str,
-    ):
+    ) -> ServicePackage | None:
+
         return (
             self.db.query(ServicePackage)
-            .filter(ServicePackage.name == name)
+            .filter(
+                ServicePackage.name == name
+            )
             .first()
         )
 
     def save(
         self,
         service_package: ServicePackage,
-    ):
-        self.db.commit()
-        self.db.refresh(service_package)
+    ) -> ServicePackage:
+
+        self.commit()
+
+        self.refresh(service_package)
 
         return service_package
 
-    def delete(
+    def remove(
         self,
         service_package: ServicePackage,
-    ):
-        self.db.delete(service_package)
-        self.db.commit()
+    ) -> None:
+
+        self.delete(service_package)
+
+        self.commit()

@@ -3,6 +3,7 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from app.schemas.service_package_price import (
+    ServicePackagePriceCreate,
     ServicePackagePriceResponse,
 )
 
@@ -33,3 +34,10 @@ class ServicePackageResponse(BaseModel):
     model_config = {
         "from_attributes": True,
     }
+
+class ServicePackageCreate(BaseModel):
+    name: str
+    description: str
+    estimated_duration: int
+
+    prices: list[ServicePackagePriceCreate]

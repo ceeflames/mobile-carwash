@@ -41,6 +41,7 @@ class VehicleService:
         )
 
         created_vehicle = self.repository.create(vehicle)
+        self.repository.commit()
 
         logger.info(
             "Vehicle %s created successfully.",

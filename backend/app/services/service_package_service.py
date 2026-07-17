@@ -2,15 +2,17 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.core.logger import setup_logger
 from app.exceptions.custom_exceptions import (
-    ConflictException,
+    BadRequestException,
     NotFoundException,
 )
+
 from app.models.service_package import ServicePackage
+
 from app.repositories.service_package_repository import (
     ServicePackageRepository,
 )
+
 from app.schemas.service_package import (
     ServicePackageCreate,
     ServicePackageUpdate,
@@ -19,49 +21,67 @@ from app.schemas.service_package import (
 
 class ServicePackageService:
 
-    logger = setup_logger(__name__)
+    def __init__(
+        self,
+        db: Session,
+    ):
+        self.db = db
 
-    def __init__(self, db: Session):
-        self.repository = ServicePackageRepository(db)
+        self.repository = (
+            ServicePackageRepository(db)
+        )
 
     def create(
         self,
         data: ServicePackageCreate,
-    ):
+    ) -> ServicePackage:
 
         existing = self.repository.get_by_name(
             data.name
         )
 
         if existing:
-            raise ConflictException(
+            raise BadRequestException(
                 "Service package already exists."
             )
 
         package = ServicePackage(
-            **data.model_dump(),
+            name=data.name,
+            description=data.description,
+            estimated_duration=data.estimated_duration,
+            is_active=True,
         )
 
-        package = self.repository.create(package)
+        self.db.add(package)
+        self.db.flush()
 
-        self.logger.info(
-            f"Created service package '{package.name}'."
+        from app.models.service_package_price import (
+            ServicePackagePrice,
         )
+
+        for item in data.prices:
+
+            price = ServicePackagePrice(
+                service_package_id=package.id,
+                vehicle_type=item.vehicle_type,
+                price=item.price,
+                is_active=True,
+            )
+
+            self.db.add(price)
+
+        self.db.commit()
+
+        self.db.refresh(package)
 
         return package
 
-    def get_all_for_admin(self):
-        """
-        Returns every service package,
-        including inactive ones.
-        """
+    def get_all(self):
+
         return self.repository.get_all()
 
-    def get_public_packages(self):
-        """
-        Returns only active packages
-        visible to customers.
-        """
+    def get_active(self):
+
         return self.repository.get_active()
 
     def get_by_id(
@@ -69,11 +89,13 @@ class ServicePackageService:
         package_id: UUID,
     ):
 
-        package = self.repository.get_by_id(
-            package_id
+        package = (
+            self.repository.get_by_id(
+                package_id
+            )
         )
 
-        if package is None:
+        if not package:
             raise NotFoundException(
                 "Service package not found."
             )
@@ -86,46 +108,58 @@ class ServicePackageService:
         data: ServicePackageUpdate,
     ):
 
-        package = self.repository.get_by_id(
+        package = self.get_by_id(
             package_id
         )
 
-        if package is None:
-            raise NotFoundException(
-                "Service package not found."
+        if (
+            data.name
+            and data.name != package.name
+        ):
+            existing = (
+                self.repository.get_by_name(
+                    data.name
+                )
             )
 
-        updates = data.model_dump(
-            exclude_unset=True
+            if existing:
+                raise BadRequestException(
+                    "Service package already exists."
+                )
+
+            package.name = data.name
+
+        if data.description is not None:
+            package.description = (
+                data.description
+            )
+
+        if (
+            data.estimated_duration
+            is not None
+        ):
+            package.estimated_duration = (
+                data.estimated_duration
+            )
+
+        if data.is_active is not None:
+            package.is_active = (
+                data.is_active
+            )
+
+        return self.repository.save(
+            package
         )
-
-        for key, value in updates.items():
-            setattr(package, key, value)
-
-        package = self.repository.save(package)
-
-        self.logger.info(
-            f"Updated service package '{package.name}'."
-        )
-
-        return package
 
     def delete(
         self,
         package_id: UUID,
     ):
 
-        package = self.repository.get_by_id(
+        package = self.get_by_id(
             package_id
         )
 
-        if package is None:
-            raise NotFoundException(
-                "Service package not found."
-            )
-
-        self.repository.delete(package)
-
-        self.logger.info(
-            f"Deleted service package '{package.name}'."
+        self.repository.delete(
+            package
         )

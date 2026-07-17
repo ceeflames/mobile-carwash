@@ -58,3 +58,8 @@ class Vehicle(BaseModel):
         "User",
         back_populates="vehicles",
     )
+
+    bookings = relationship(
+        "Booking",
+        back_populates="vehicle",
+    )

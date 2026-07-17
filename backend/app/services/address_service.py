@@ -69,6 +69,9 @@ class AddressService:
 
         created = self.repository.create(address)
 
+        self.repository.commit()
+        self.repository.refresh(created)
+
         logger.info(
             "Address %s created.",
             created.id,

@@ -41,3 +41,8 @@ class ServicePackage(BaseModel):
         back_populates="service_package",
         cascade="all, delete-orphan",
     )
+
+    bookings = relationship(
+        "Booking",
+        back_populates="service_package",
+    )

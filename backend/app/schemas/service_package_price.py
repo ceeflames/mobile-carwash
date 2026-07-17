@@ -7,21 +7,33 @@ from app.models.enums import VehicleType
 
 
 class ServicePackagePriceCreate(BaseModel):
+
+    service_package_id: UUID
+
     vehicle_type: VehicleType
+
     price: Decimal
 
 
 class ServicePackagePriceUpdate(BaseModel):
+
     vehicle_type: VehicleType | None = None
+
     price: Decimal | None = None
+
     is_active: bool | None = None
 
 
 class ServicePackagePriceResponse(BaseModel):
+
     id: UUID
+
     service_package_id: UUID
+
     vehicle_type: VehicleType
+
     price: Decimal
+
     is_active: bool
 
     model_config = {

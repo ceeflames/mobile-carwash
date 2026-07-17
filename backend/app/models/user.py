@@ -48,13 +48,36 @@ class User(BaseModel):
     )
 
     vehicles = relationship(
-    "Vehicle",
-    back_populates="owner",
-    cascade="all, delete",
+        "Vehicle",
+        back_populates="owner",
+        cascade="all, delete",
     )
-    
+
     addresses = relationship(
-    "Address",
-    back_populates="user",
-    cascade="all, delete-orphan",
-)
+        "Address",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    customer_bookings = relationship(
+        "Booking",
+        foreign_keys="Booking.customer_id",
+        back_populates="customer",
+    )
+
+    assigned_bookings = relationship(
+        "Booking",
+        foreign_keys="Booking.washer_id",
+        back_populates="washer",
+    )
+
+    dispatched_bookings = relationship(
+        "Booking",
+        foreign_keys="Booking.dispatcher_id",
+        back_populates="dispatcher",
+    )
+
+    status_changes = relationship(
+        "BookingStatusHistory",
+        foreign_keys="BookingStatusHistory.changed_by_id",
+    )

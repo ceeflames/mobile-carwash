@@ -23,6 +23,15 @@ from app.api.v1.service_packages import (
 from app.api.v1.admin_service_packages import (
     router as admin_service_package_router,
 )
+from app.api.v1.bookings import (
+    router as booking_router,
+)
+from app.api.v1.service_package_prices import (
+    router as service_package_price_router,
+)
+from app.api.v1.staff import (
+    router as staff_router,
+)
 
 app.include_router(auth_router)
 app.include_router(admin_router)
@@ -32,6 +41,9 @@ app.middleware("http")(log_requests)
 app.include_router(addresses_router)
 app.include_router(service_package_router)
 app.include_router(admin_service_package_router)
+app.include_router(booking_router)
+app.include_router(service_package_price_router)
+app.include_router(staff_router)
 
 
 @app.get("/")

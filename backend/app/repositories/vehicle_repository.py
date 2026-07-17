@@ -1,25 +1,34 @@
 from uuid import UUID
 
-from sqlalchemy.orm import Session
-
 from app.models.vehicle import Vehicle
+from app.repositories.base_repository import BaseRepository
 
 
-class VehicleRepository:
+class VehicleRepository(BaseRepository):
 
-    def __init__(self, db: Session):
-        self.db = db
+    def create(
+        self,
+        vehicle: Vehicle,
+    ) -> Vehicle:
 
-    def create(self, vehicle: Vehicle) -> Vehicle:
-        self.db.add(vehicle)
-        self.db.commit()
-        self.db.refresh(vehicle)
+        self.add(vehicle)
+
+        self.flush()
+
+        self.refresh(vehicle)
+
         return vehicle
 
-    def get_by_owner(self, owner_id: UUID) -> list[Vehicle]:
+    def get_by_owner(
+        self,
+        owner_id: UUID,
+    ) -> list[Vehicle]:
+
         return (
             self.db.query(Vehicle)
-            .filter(Vehicle.owner_id == owner_id)
+            .filter(
+                Vehicle.owner_id == owner_id
+            )
             .all()
         )
 
@@ -27,17 +36,29 @@ class VehicleRepository:
         self,
         vehicle_id: UUID,
     ) -> Vehicle | None:
+
         return (
             self.db.query(Vehicle)
-            .filter(Vehicle.id == vehicle_id)
+            .filter(
+                Vehicle.id == vehicle_id
+            )
             .first()
         )
 
-    def save(self, vehicle: Vehicle) -> Vehicle:
-        self.db.commit()
-        self.db.refresh(vehicle)
+    def save(
+        self,
+        vehicle: Vehicle,
+    ) -> Vehicle:
+
+        self.flush()
+
+        self.refresh(vehicle)
+
         return vehicle
 
-    def delete(self, vehicle: Vehicle) -> None:
-        self.db.delete(vehicle)
-        self.db.commit()
+    def remove(
+        self,
+        vehicle: Vehicle,
+    ) -> None:
+
+        self.delete(vehicle)
