@@ -3,7 +3,6 @@ from uuid import UUID
 from fastapi import (
     APIRouter,
     Depends,
-    status,
 )
 
 from sqlalchemy.orm import Session
@@ -15,116 +14,53 @@ from app.dependencies.auth import get_current_user
 from app.models.user import User
 
 from app.schemas.booking import (
-    BookingCreate,
-    BookingResponse,
-    BookingCancel,
-    BookingReschedule,
     BookingAssignWasher,
+    BookingResponse,
 )
 
 from app.services.booking_service import BookingService
 
 
 router = APIRouter(
-    prefix="/bookings",
-    tags=["Bookings"],
+    prefix="/dispatcher",
+    tags=["Dispatcher"],
 )
-
-
-@router.post(
-    "",
-    response_model=BookingResponse,
-    status_code=status.HTTP_201_CREATED,
-)
-def create_booking(
-    booking: BookingCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-
-    service = BookingService(db)
-
-    return service.create_booking(
-        customer=current_user,
-        data=booking,
-    )
 
 
 @router.get(
-    "/my-bookings",
+    "/bookings/pending",
     response_model=list[BookingResponse],
 )
-def get_my_bookings(
+def get_pending_bookings(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
 
     service = BookingService(db)
 
-    return service.get_customer_bookings(
-        current_user.id,
-    )
-
-
-@router.get(
-    "/{booking_id}",
-    response_model=BookingResponse,
-)
-def get_booking(
-    booking_id: UUID,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-
-    service = BookingService(db)
-
-    return service.get_booking(
-        booking_id,
+    return service.get_pending_bookings(
         current_user,
     )
 
-@router.patch(
-    "/{booking_id}/cancel",
-    response_model=BookingResponse,
+
+@router.get(
+    "/bookings",
+    response_model=list[BookingResponse],
 )
-def cancel_booking(
-    booking_id: UUID,
-    data: BookingCancel,
+def get_dispatcher_bookings(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
 
     service = BookingService(db)
 
-    return service.cancel_booking(
-        booking_id=booking_id,
-        current_user=current_user,
-        reason=data.reason,
+    return service.get_dispatcher_bookings(
+        current_user,
     )
 
 
 @router.patch(
-    "/{booking_id}/reschedule",
-    response_model=BookingResponse,
-)
-def reschedule_booking(
-    booking_id: UUID,
-    data: BookingReschedule,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-
-    service = BookingService(db)
-
-    return service.reschedule_booking(
-        booking_id=booking_id,
-        current_user=current_user,
-        data=data,
-    )
-
-
-@router.patch(
-    "/{booking_id}/assign-washer",
+    "/bookings/{booking_id}/assign",
     response_model=BookingResponse,
 )
 def assign_washer(
@@ -139,6 +75,72 @@ def assign_washer(
     return service.assign_washer(
         booking_id=booking_id,
         washer_id=data.washer_id,
-        dispatcher_id=data.dispatcher_id,
+        dispatcher_id=current_user.id,
         current_user=current_user,
+    )
+
+@router.patch(
+    "/bookings/{booking_id}/reassign",
+    response_model=BookingResponse,
+)
+def reassign_washer(
+    booking_id: UUID,
+    data: BookingAssignWasher,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    service = BookingService(db)
+
+    return service.reassign_washer(
+        booking_id=booking_id,
+        washer_id=data.washer_id,
+        dispatcher_id=current_user.id,
+        current_user=current_user,
+    )
+
+
+@router.get(
+    "/bookings/today",
+    response_model=list[BookingResponse],
+)
+def get_today_bookings(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    service = BookingService(db)
+
+    return service.get_today_bookings(
+        current_user,
+    )
+
+
+@router.get(
+    "/bookings/unassigned",
+    response_model=list[BookingResponse],
+)
+def get_unassigned_bookings(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    service = BookingService(db)
+
+    return service.get_unassigned_bookings(
+        current_user,
+    )
+
+
+@router.get(
+    "/dashboard")
+def dispatcher_dashboard(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    service = BookingService(db)
+
+    return service.dispatcher_dashboard(
+        current_user,
     )

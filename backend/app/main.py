@@ -32,6 +32,7 @@ from app.api.v1.service_package_prices import (
 from app.api.v1.staff import (
     router as staff_router,
 )
+from app.api.v1.payments import router as payments_router
 
 app.include_router(auth_router)
 app.include_router(admin_router)
@@ -44,7 +45,7 @@ app.include_router(admin_service_package_router)
 app.include_router(booking_router)
 app.include_router(service_package_price_router)
 app.include_router(staff_router)
-
+app.include_router(payments_router,)
 
 @app.get("/")
 def root():

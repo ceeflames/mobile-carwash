@@ -27,6 +27,13 @@ class BookingStatus(str, Enum):
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
+    WASHING = "WASHING"
+    NO_SHOW = "NO_SHOW"
+    REJECTED = "REJECTED"
+    ON_THE_WAY = "ON_THE_WAY"
+    ASSIGNED = "ASSIGNED"
+    CONFIRMED = "CONFIRMED"
+
 
 
 class PaymentStatus(str, Enum):
@@ -34,3 +41,7 @@ class PaymentStatus(str, Enum):
     PAID = "PAID"
     FAILED = "FAILED"
     REFUNDED = "REFUNDED"
+
+class PaymentProvider(str, Enum):
+    PAYSTACK = "PAYSTACK"
+    FLUTTERWAVE = "FLUTTERWAVE"

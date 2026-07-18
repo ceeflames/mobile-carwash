@@ -3,7 +3,6 @@ from uuid import UUID
 from fastapi import (
     APIRouter,
     Depends,
-    status,
 )
 
 from sqlalchemy.orm import Session
@@ -14,131 +13,122 @@ from app.dependencies.auth import get_current_user
 
 from app.models.user import User
 
-from app.schemas.booking import (
-    BookingCreate,
-    BookingResponse,
-    BookingCancel,
-    BookingReschedule,
-    BookingAssignWasher,
-)
+from app.schemas.booking import BookingResponse
 
 from app.services.booking_service import BookingService
-
+from app.models.enums import BookingStatus
 
 router = APIRouter(
-    prefix="/bookings",
-    tags=["Bookings"],
+    prefix="/washer",
+    tags=["Washer"],
 )
-
-
-@router.post(
-    "",
-    response_model=BookingResponse,
-    status_code=status.HTTP_201_CREATED,
-)
-def create_booking(
-    booking: BookingCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-
-    service = BookingService(db)
-
-    return service.create_booking(
-        customer=current_user,
-        data=booking,
-    )
 
 
 @router.get(
-    "/my-bookings",
+    "/bookings",
     response_model=list[BookingResponse],
 )
-def get_my_bookings(
+def get_my_jobs(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
 
     service = BookingService(db)
 
-    return service.get_customer_bookings(
+    return service.get_washer_bookings(
         current_user.id,
     )
 
 
-@router.get(
-    "/{booking_id}",
-    response_model=BookingResponse,
-)
-def get_booking(
-    booking_id: UUID,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-
-    service = BookingService(db)
-
-    return service.get_booking(
-        booking_id,
-        current_user,
-    )
-
 @router.patch(
-    "/{booking_id}/cancel",
+    "/bookings/{booking_id}/accept",
     response_model=BookingResponse,
 )
-def cancel_booking(
+def accept_booking(
     booking_id: UUID,
-    data: BookingCancel,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
 
     service = BookingService(db)
 
-    return service.cancel_booking(
+    return service.update_status(
         booking_id=booking_id,
+        new_status=BookingStatus.ACCEPTED,
         current_user=current_user,
-        reason=data.reason,
     )
 
 
 @router.patch(
-    "/{booking_id}/reschedule",
+    "/bookings/{booking_id}/en-route",
     response_model=BookingResponse,
 )
-def reschedule_booking(
+def en_route(
     booking_id: UUID,
-    data: BookingReschedule,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
 
     service = BookingService(db)
 
-    return service.reschedule_booking(
+    return service.update_status(
         booking_id=booking_id,
+        new_status=BookingStatus.EN_ROUTE,
         current_user=current_user,
-        data=data,
     )
 
-
 @router.patch(
-    "/{booking_id}/assign-washer",
+    "/bookings/{booking_id}/arrived",
     response_model=BookingResponse,
 )
-def assign_washer(
+def arrived(
     booking_id: UUID,
-    data: BookingAssignWasher,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
 
     service = BookingService(db)
 
-    return service.assign_washer(
+    return service.update_status(
         booking_id=booking_id,
-        washer_id=data.washer_id,
-        dispatcher_id=data.dispatcher_id,
+        new_status=BookingStatus.ARRIVED,
+        current_user=current_user,
+    )
+
+
+@router.patch(
+    "/bookings/{booking_id}/start",
+    response_model=BookingResponse,
+)
+def start_wash(
+    booking_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    service = BookingService(db)
+
+    return service.update_status(
+        booking_id=booking_id,
+        new_status=BookingStatus.IN_PROGRESS,
+        current_user=current_user,
+    )
+
+
+@router.patch(
+    "/bookings/{booking_id}/complete",
+    response_model=BookingResponse,
+)
+def complete_wash(
+    booking_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    service = BookingService(db)
+
+    return service.update_status(
+        booking_id=booking_id,
+        new_status=BookingStatus.COMPLETED,
         current_user=current_user,
     )

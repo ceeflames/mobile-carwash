@@ -79,6 +79,10 @@ class ServicePackageService:
     def get_all(self):
 
         return self.repository.get_all()
+    
+    def get_all_for_admin(self):
+
+        return self.repository.get_all()
 
     def get_active(self):
 

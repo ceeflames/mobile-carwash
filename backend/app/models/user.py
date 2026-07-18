@@ -81,3 +81,7 @@ class User(BaseModel):
         "BookingStatusHistory",
         foreign_keys="BookingStatusHistory.changed_by_id",
     )
+    payments = relationship(
+        "Payment",
+        back_populates="customer",
+    )

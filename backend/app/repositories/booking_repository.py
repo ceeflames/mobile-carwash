@@ -1,8 +1,10 @@
 from uuid import UUID
-
+from datetime import datetime, timezone
 from app.models.booking import Booking
 from app.repositories.base_repository import BaseRepository
 from sqlalchemy.orm import joinedload
+from app.models.enums import (
+    BookingStatus,)
 
 class BookingRepository(BaseRepository):
 
@@ -99,3 +101,121 @@ class BookingRepository(BaseRepository):
     ):
 
         self.delete(booking)
+
+    def get_pending_bookings(
+        self,
+    ) -> list[Booking]:
+
+        return (
+            self.db.query(Booking)
+            .options(
+                joinedload(Booking.vehicle),
+                joinedload(Booking.address),
+                joinedload(Booking.customer),
+                joinedload(Booking.service_package),
+            )
+            .filter(
+                Booking.status == BookingStatus.PENDING
+            )
+            .order_by(
+                Booking.scheduled_at.asc()
+            )
+            .all()
+        )
+    
+    def get_washer_bookings(
+    self,
+    washer_id: UUID,
+    ) -> list[Booking]:
+
+        return (
+            self.db.query(Booking)
+            .options(
+                joinedload(Booking.vehicle),
+                joinedload(Booking.address),
+                joinedload(Booking.customer),
+                joinedload(Booking.service_package),
+            )
+            .filter(
+                Booking.washer_id == washer_id
+            )
+            .order_by(
+                Booking.scheduled_at.asc()
+            )
+            .all()
+        )
+    
+    def get_dispatcher_bookings(
+    self,
+    dispatcher_id: UUID,
+    ) -> list[Booking]:
+
+        return (
+            self.db.query(Booking)
+            .options(
+                joinedload(Booking.vehicle),
+                joinedload(Booking.address),
+                joinedload(Booking.customer),
+                joinedload(Booking.service_package),
+                joinedload(Booking.washer),
+            )
+            .filter(
+                Booking.dispatcher_id == dispatcher_id
+            )
+            .order_by(
+                Booking.scheduled_at.asc()
+            )
+            .all()
+        )
+    def delete(
+        self,
+        booking: Booking,
+    ):
+
+        super().delete(booking)
+
+    def get_today_bookings(
+        self,
+    ) -> list[Booking]:
+
+        today = datetime.now(timezone.utc).date()
+
+        return (
+            self.db.query(Booking)
+            .options(
+                joinedload(Booking.vehicle),
+                joinedload(Booking.address),
+                joinedload(Booking.customer),
+                joinedload(Booking.washer),
+                joinedload(Booking.dispatcher),
+                joinedload(Booking.service_package),
+            )
+            .filter(
+                Booking.scheduled_at >= today,
+            )
+            .order_by(
+                Booking.scheduled_at.asc(),
+            )
+            .all()
+        )
+    
+    def get_unassigned_bookings(
+        self,
+    ) -> list[Booking]:
+
+        return (
+            self.db.query(Booking)
+            .options(
+                joinedload(Booking.vehicle),
+                joinedload(Booking.address),
+                joinedload(Booking.customer),
+                joinedload(Booking.service_package),
+            )
+            .filter(
+                Booking.washer_id.is_(None),
+            )
+            .order_by(
+                Booking.created_at.desc(),
+            )
+            .all()
+        )

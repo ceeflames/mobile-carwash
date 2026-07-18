@@ -59,6 +59,15 @@ class Booking(BaseModel):
         )
     )
 
+    service_package_price_id: Mapped[str | None] = mapped_column(
+        ForeignKey(
+            "service_package_prices.id",
+            ondelete="SET NULL",
+        ),
+        nullable=True,
+)
+
+
     washer_id: Mapped[str | None] = mapped_column(
         ForeignKey(
             "users.id",
@@ -140,4 +149,13 @@ class Booking(BaseModel):
         "BookingStatusHistory",
         back_populates="booking",
         cascade="all, delete-orphan",
+    )
+    service_package_price = relationship(
+        "ServicePackagePrice",
+        back_populates="bookings",
+    )
+    payment = relationship(
+        "Payment",
+        back_populates="booking",
+        uselist=False,
     )

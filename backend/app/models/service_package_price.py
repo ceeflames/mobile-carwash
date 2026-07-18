@@ -53,3 +53,7 @@ class ServicePackagePrice(BaseModel):
         "ServicePackage",
         back_populates="prices",
     )
+    bookings = relationship(
+    "Booking",
+    back_populates="service_package_price",
+)
