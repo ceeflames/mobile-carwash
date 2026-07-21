@@ -3,7 +3,7 @@ from sqlalchemy import Boolean, Enum, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base_model import BaseModel
-from app.models.enums import UserRole
+from app.models.enums import UserRole, WasherAvailability
 
 
 class User(BaseModel):
@@ -30,6 +30,13 @@ class User(BaseModel):
     role: Mapped[UserRole] = mapped_column(
         Enum(UserRole),
         default=UserRole.CUSTOMER,
+    )
+
+    availability: Mapped[WasherAvailability] = mapped_column(
+    Enum(WasherAvailability),
+    nullable=False,
+    default=WasherAvailability.OFFLINE,
+    server_default=WasherAvailability.OFFLINE.value,
     )
 
     is_active: Mapped[bool] = mapped_column(

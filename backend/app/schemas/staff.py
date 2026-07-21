@@ -2,7 +2,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from app.models.enums import UserRole
+from app.models.enums import UserRole, WasherAvailability
 
 
 class StaffCreate(BaseModel):
@@ -36,5 +36,8 @@ class StaffResponse(BaseModel):
 
     is_active: bool
 
-    class Config:
+class Config:
         from_attributes = True
+
+class WasherAvailabilityUpdate(BaseModel):
+    availability: WasherAvailability    

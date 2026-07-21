@@ -5,23 +5,19 @@ from fastapi import (
     Depends,
     status,
 )
-
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-
 from app.dependencies.auth import get_current_user
-
 from app.models.user import User
-
 from app.schemas.booking import (
-    BookingCreate,
-    BookingResponse,
-    BookingCancel,
-    BookingReschedule,
     BookingAssignWasher,
+    BookingCancel,
+    BookingCreate,
+    BookingReschedule,
+    BookingResponse,
+    BookingTrackingResponse,
 )
-
 from app.services.booking_service import BookingService
 
 
@@ -41,7 +37,6 @@ def create_booking(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
     service = BookingService(db)
 
     return service.create_booking(
@@ -58,7 +53,6 @@ def get_my_bookings(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
     service = BookingService(db)
 
     return service.get_customer_bookings(
@@ -75,13 +69,30 @@ def get_booking(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
     service = BookingService(db)
 
     return service.get_booking(
         booking_id,
         current_user,
     )
+
+
+@router.get(
+    "/{booking_id}/tracking",
+    response_model=BookingTrackingResponse,
+)
+def get_booking_tracking(
+    booking_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    service = BookingService(db)
+
+    return service.get_booking_tracking(
+        booking_id,
+        current_user,
+    )
+
 
 @router.patch(
     "/{booking_id}/cancel",
@@ -93,7 +104,6 @@ def cancel_booking(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
     service = BookingService(db)
 
     return service.cancel_booking(
@@ -113,7 +123,6 @@ def reschedule_booking(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
     service = BookingService(db)
 
     return service.reschedule_booking(
@@ -133,12 +142,27 @@ def assign_washer(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
     service = BookingService(db)
 
     return service.assign_washer(
         booking_id=booking_id,
         washer_id=data.washer_id,
-        dispatcher_id=data.dispatcher_id,
         current_user=current_user,
+    )
+
+@router.patch(
+    "/{booking_id}/auto-assign",
+    response_model=BookingResponse,
+)
+def auto_assign(
+    booking_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    service = BookingService(db)
+
+    return service.auto_assign_washer(
+        booking_id,
+        current_user,
     )

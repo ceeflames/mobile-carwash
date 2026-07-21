@@ -5,7 +5,7 @@ from app.repositories.base_repository import BaseRepository
 from sqlalchemy.orm import joinedload
 from app.models.enums import (
     BookingStatus,)
-
+from app.models.booking_status_history import BookingStatusHistory
 class BookingRepository(BaseRepository):
 
     def create(self,booking: Booking,) -> Booking:
@@ -217,5 +217,50 @@ class BookingRepository(BaseRepository):
             .order_by(
                 Booking.created_at.desc(),
             )
+            .all()
+        )
+    
+    def get_status_history(
+        self,
+        booking_id: UUID,
+    ):
+
+        return (
+            self.db.query(
+                BookingStatusHistory,
+            )
+            .filter(
+                BookingStatusHistory.booking_id == booking_id
+            )
+            .order_by(
+                BookingStatusHistory.created_at.asc()
+            )
+            .all()
+        )
+    
+    def count_by_status(
+        self,
+        status: BookingStatus,
+    ) -> int:
+
+        return (
+            self.db.query(Booking)
+            .filter(
+                Booking.status == status,
+            )
+            .count()
+        )
+
+    def get_recent_bookings(
+        self,
+        limit: int = 10,
+    ) -> list[Booking]:
+
+        return (
+            self.db.query(Booking)
+            .order_by(
+                Booking.created_at.desc(),
+            )
+            .limit(limit)
             .all()
         )

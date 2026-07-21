@@ -7,7 +7,7 @@ from app.exceptions.custom_exceptions import (
 
 from app.models.user import User
 
-from app.models.enums import UserRole
+from app.models.enums import UserRole, WasherAvailability
 
 from app.repositories.user_repository import UserRepository
 
@@ -86,3 +86,24 @@ class StaffService:
         return self.user_repository.get_by_role(
             UserRole.DISPATCHER
         )
+    
+    def update_washer_availability(
+        self,
+        washer: User,
+        availability: WasherAvailability,
+    ):
+
+        if washer.role != UserRole.WASHER:
+            raise BadRequestException(
+                "Only washers have availability."
+            )
+
+        washer.availability = availability
+
+        self.user_repository.save(washer)
+
+        self.db.commit()
+
+        self.db.refresh(washer)
+
+        return washer

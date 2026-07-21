@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.core.logger import setup_logger
 from app.models.user import User
 from uuid import UUID
-from app.models.enums import UserRole
+from app.models.enums import UserRole, WasherAvailability
 
 logger = setup_logger(__name__)
 
@@ -99,4 +99,63 @@ class UserRepository:
                 )
             )
             .all()
+        )
+    
+    def save(
+        self,
+        user: User,
+    ):
+        self.db.add(user)
+        self.db.flush()
+        self.db.refresh(user)
+
+        return user
+    
+
+    def get_available_washers(self):
+
+        return (
+            self.db.query(User)
+            .filter(
+                User.role == UserRole.WASHER,
+                User.availability == WasherAvailability.AVAILABLE,
+                User.is_active == True,
+            )
+            .all()
+        )
+    
+    def count_available_washers(self) -> int:
+
+        return (
+            self.db.query(User)
+            .filter(
+                User.role == UserRole.WASHER,
+                User.availability == WasherAvailability.AVAILABLE,
+                User.is_active == True,
+            )
+            .count()
+        )
+
+    def count_busy_washers(self) -> int:
+
+        return (
+            self.db.query(User)
+            .filter(
+                User.role == UserRole.WASHER,
+                User.availability == WasherAvailability.BUSY,
+                User.is_active == True,
+            )
+            .count()
+        )
+
+    def count_offline_washers(self) -> int:
+
+        return (
+            self.db.query(User)
+            .filter(
+                User.role == UserRole.WASHER,
+                User.availability == WasherAvailability.OFFLINE,
+                User.is_active == True,
+            )
+            .count()
         )

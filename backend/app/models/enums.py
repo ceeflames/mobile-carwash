@@ -2,11 +2,17 @@ from enum import Enum
 
 
 class UserRole(str, Enum):
-    CUSTOMER = "customer"
-    WASHER = "washer"
-    DISPATCHER = "dispatcher"
-    ADMIN = "admin"
-    SUPER_ADMIN = "super_admin"
+    CUSTOMER = "CUSTOMER"
+    WASHER = "WASHER"
+    DISPATCHER = "DISPATCHER"
+    ADMIN = "ADMIN"
+    SUPER_ADMIN = "SUPER_ADMIN"
+
+class WasherAvailability(str, Enum):
+    AVAILABLE = "AVAILABLE"
+    BUSY = "BUSY"
+    OFFLINE = "OFFLINE"
+    ON_BREAK = "ON_BREAK"
 
 
 class VehicleType(str, Enum):
@@ -20,11 +26,8 @@ class VehicleType(str, Enum):
 
 class BookingStatus(str, Enum):
     PENDING = "PENDING"
-    WASHER_ASSIGNED = "WASHER_ASSIGNED"
     ACCEPTED = "ACCEPTED"
-    EN_ROUTE = "EN_ROUTE"
     ARRIVED = "ARRIVED"
-    IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
     WASHING = "WASHING"
@@ -32,7 +35,6 @@ class BookingStatus(str, Enum):
     REJECTED = "REJECTED"
     ON_THE_WAY = "ON_THE_WAY"
     ASSIGNED = "ASSIGNED"
-    CONFIRMED = "CONFIRMED"
 
 
 

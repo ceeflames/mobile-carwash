@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.models.enums import (
     BookingStatus,
@@ -107,4 +107,19 @@ class BookingReschedule(BaseModel):
 
 class BookingAssignWasher(BaseModel):
     washer_id: UUID
-    dispatcher_id: UUID | None = None
+
+class BookingTimelineItem(BaseModel):
+    from_status: BookingStatus | None
+    to_status: BookingStatus
+    reason: str | None
+    created_at: datetime
+
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
+
+class BookingTrackingResponse(BaseModel):
+
+    booking: BookingResponse
+
+    timeline: list[BookingTimelineItem]

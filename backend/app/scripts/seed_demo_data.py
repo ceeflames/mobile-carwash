@@ -32,12 +32,15 @@ def random_booking_status():
     return random.choice(
         [
             BookingStatus.PENDING,
-            BookingStatus.WASHER_ASSIGNED,
+            BookingStatus.ASSIGNED,
             BookingStatus.ACCEPTED,
-            BookingStatus.EN_ROUTE,
+            BookingStatus.ON_THE_WAY,
             BookingStatus.ARRIVED,
-            BookingStatus.IN_PROGRESS,
+            BookingStatus.WASHING,
             BookingStatus.COMPLETED,
+            BookingStatus.CANCELLED,
+            BookingStatus.NO_SHOW,
+            BookingStatus.REJECTED,
         ]
     )
 

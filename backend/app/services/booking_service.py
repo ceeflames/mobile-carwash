@@ -2,6 +2,7 @@ from decimal import Decimal
 from uuid import uuid4
 from uuid import UUID
 from datetime import datetime, timezone
+from app.models import booking
 from sqlalchemy.orm import Session
 
 from app.exceptions.custom_exceptions import (
@@ -17,6 +18,7 @@ from app.models.booking_status_history import (
 from app.models.enums import (
     BookingStatus,
     PaymentStatus,
+    WasherAvailability,
 )
 
 from app.models.user import User, UserRole
@@ -42,8 +44,15 @@ from app.repositories.vehicle_repository import (
 
 from app.schemas.booking import (
     BookingCreate,
+    BookingResponse,
+    BookingTrackingResponse,
+    BookingReschedule
 )
 from app.repositories.user_repository import UserRepository
+
+from app.repositories.booking_status_history_repository import (
+    BookingStatusHistoryRepository,
+)
 class BookingService:
 
     def __init__(
@@ -55,6 +64,9 @@ class BookingService:
 
         self.booking_repository = BookingRepository(db)
 
+        self.booking_status_history_repository = (
+            BookingStatusHistoryRepository(db)      
+        )
         self.history_repository = (
             BookingStatusHistoryRepository(db)
         )
@@ -211,6 +223,7 @@ class BookingService:
         )
 
         self.history_repository.create(history)
+
     def _change_status(
         self,
         booking: Booking,
@@ -346,6 +359,7 @@ class BookingService:
             not in (
                 "admin",
                 "super_admin",
+                "dispatcher",
             )
         ):
             raise BadRequestException(
@@ -367,7 +381,7 @@ class BookingService:
         
         if booking.status not in (
         BookingStatus.PENDING,
-        BookingStatus.WASHER_ASSIGNED,):
+        BookingStatus.ASSIGNED,):
             raise BadRequestException(
             "Booking cannot be cancelled."
         )
@@ -397,7 +411,7 @@ class BookingService:
 
         if booking.status not in (
             BookingStatus.PENDING,
-            BookingStatus.WASHER_ASSIGNED,
+            BookingStatus.ASSIGNED,
         ):
             raise BadRequestException(
                 "Booking cannot be rescheduled."
@@ -429,7 +443,6 @@ class BookingService:
         self,
         booking_id,
         washer_id,
-        dispatcher_id,
         current_user: User,
     ):
 
@@ -458,19 +471,14 @@ class BookingService:
             )
 
         booking.washer_id = washer.id
-        booking.dispatcher_id = dispatcher_id
+        booking.dispatcher_id = current_user.id
 
-        self._change_status(
+        return self._change_status(
             booking,
-            BookingStatus.WASHER_ASSIGNED,
-            current_user.id,
-        )
+            current_user,
+            BookingStatus.ASSIGNED,
+        )   
 
-        self.db.commit()
-
-        return self.booking_repository.get_by_id(
-            booking.id
-        )
     
     def get_pending_bookings(
         self,
@@ -565,20 +573,15 @@ class BookingService:
             )
 
         booking.washer_id = washer.id
+
         booking.dispatcher_id = dispatcher_id
 
-        self._change_status(
-            booking,
-            BookingStatus.WASHER_ASSIGNED,
-            current_user.id,
-        )
+        return self._change_status(
+                    booking,
+                    current_user,
+                    BookingStatus.ASSIGNED,
+                )
 
-        self.db.commit()
-
-        return self.booking_repository.get_by_id(
-            booking.id,
-        )
-    
     def dispatcher_dashboard(
         self,
         current_user: User,
@@ -632,11 +635,11 @@ class BookingService:
         old_status = booking.status
 
         valid_transitions = {
-            BookingStatus.WASHER_ASSIGNED: BookingStatus.ACCEPTED,
-            BookingStatus.ACCEPTED: BookingStatus.EN_ROUTE,
-            BookingStatus.EN_ROUTE: BookingStatus.ARRIVED,
-            BookingStatus.ARRIVED: BookingStatus.IN_PROGRESS,
-            BookingStatus.IN_PROGRESS: BookingStatus.COMPLETED,
+            BookingStatus.ASSIGNED: BookingStatus.ACCEPTED,
+            BookingStatus.ACCEPTED: BookingStatus.ON_THE_WAY,
+            BookingStatus.ON_THE_WAY: BookingStatus.ARRIVED,
+            BookingStatus.ARRIVED: BookingStatus.WASHING,
+            BookingStatus.WASHING: BookingStatus.COMPLETED,
         }
 
         expected_status = valid_transitions.get(old_status)
@@ -664,4 +667,222 @@ class BookingService:
 
         return self.booking_repository.get_by_id(
             booking.id,
+        )
+    
+    def accept_job(
+        self,
+        booking_id: UUID,
+        washer: User,
+    ) -> Booking:
+
+        booking = self.booking_repository.get_by_id(
+            booking_id,
+        )
+
+        if booking is None:
+            raise NotFoundException(
+                "Booking not found."
+            )
+
+        if booking.washer_id != washer.id:
+            raise BadRequestException(
+                "This booking is not assigned to you."
+            )
+
+        if booking.status != BookingStatus.ASSIGNED:
+            raise BadRequestException(
+                "Booking cannot be accepted."
+            )
+
+        return self._change_status(
+            booking,
+            washer,
+            BookingStatus.ACCEPTED,
+        )
+    
+    def start_trip(
+        self,
+        booking_id: UUID,
+        washer: User,
+    ) -> Booking:
+
+        booking = self.booking_repository.get_by_id(
+            booking_id,
+        )
+
+        if booking is None:
+            raise NotFoundException(
+                "Booking not found."
+            )
+
+        if booking.washer_id != washer.id:
+            raise BadRequestException(
+                "This booking is not assigned to you."
+            )
+
+        if booking.status != BookingStatus.ACCEPTED:
+            raise BadRequestException(
+                "Booking is not ready."
+            )
+
+        return self._change_status(
+            booking,
+            washer,
+            BookingStatus.ON_THE_WAY,
+        )
+    
+    def arrive(
+        self,
+        booking_id: UUID,
+        washer: User,
+    ) -> Booking:
+
+        booking = self.booking_repository.get_by_id(
+            booking_id,
+        )
+
+        if booking is None:
+            raise NotFoundException(
+                "Booking not found."
+            )
+
+        if booking.washer_id != washer.id:
+            raise BadRequestException(
+                "This booking is not assigned to you."
+            )
+
+        if booking.status != BookingStatus.ON_THE_WAY:
+            raise BadRequestException(
+                "Booking is not on the way."
+            )
+
+        return self._change_status(
+            booking,
+            washer,
+            BookingStatus.ARRIVED,
+        )
+    
+    def start_washing(
+        self,
+        booking_id: UUID,
+        washer: User,
+    ) -> Booking:
+
+        booking = self.booking_repository.get_by_id(
+            booking_id,
+        )
+
+        if booking is None:
+            raise NotFoundException(
+                "Booking not found."
+            )
+
+        if booking.washer_id != washer.id:
+            raise BadRequestException(
+                "This booking is not assigned to you."
+            )
+
+        if booking.status != BookingStatus.ARRIVED:
+            raise BadRequestException(
+                "Booking has not arrived."
+            )
+
+        return self._change_status(
+            booking,
+            washer,
+            BookingStatus.WASHING,
+        )
+    def complete_job(
+        self,
+        booking_id: UUID,
+        washer: User,
+    ) -> Booking:
+
+        booking = self.booking_repository.get_by_id(
+            booking_id,
+        )
+
+        if booking is None:
+            raise NotFoundException(
+                "Booking not found."
+            )
+
+        if booking.washer_id != washer.id:
+            raise BadRequestException(
+                "This booking is not assigned to you."
+            )
+
+        if booking.status != BookingStatus.WASHING:
+            raise BadRequestException(
+                "Booking is not being washed."
+            )
+
+        return self._change_status(
+            booking,
+            washer,
+            BookingStatus.COMPLETED,
+        )
+    
+    def get_booking_tracking(
+        self,
+        booking_id: UUID,
+        current_user: User,
+    ) -> BookingTrackingResponse:
+
+        booking = self.get_booking(
+            booking_id,
+            current_user,
+        )
+
+        history = (
+            self.booking_status_history_repository
+            .get_booking_history(
+                booking.id,
+            )
+        )
+
+        return {
+            "booking": booking,
+            "timeline": history,
+        }
+    
+    def auto_assign_washer(
+        self,
+        booking_id: UUID,
+        dispatcher: User,
+    ):
+            
+        booking = self.get_booking(
+            booking_id,
+            dispatcher,
+        )
+        if booking.washer_id:
+            raise BadRequestException(
+                "Booking already has a washer."
+            )
+
+        if booking.status != BookingStatus.PENDING:
+            raise BadRequestException(
+                "Booking cannot be assigned."
+            )
+
+        washers = self.user_repository.get_available_washers()
+      
+
+        if not washers:
+            raise BadRequestException(
+                "No available washers."
+            )
+        
+        washer = washers[0]
+
+        booking.washer_id = washer.id
+        booking.dispatcher_id = dispatcher.id
+
+        washer.availability = WasherAvailability.BUSY
+
+        return self._change_status(
+            booking,
+            dispatcher,
+            BookingStatus.ASSIGNED,
         )

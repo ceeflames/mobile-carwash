@@ -1,22 +1,13 @@
 from uuid import UUID
 
-from fastapi import (
-    APIRouter,
-    Depends,
-)
-
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-
 from app.dependencies.auth import get_current_user
-
 from app.models.user import User
-
 from app.schemas.booking import BookingResponse
-
 from app.services.booking_service import BookingService
-from app.models.enums import BookingStatus
 
 router = APIRouter(
     prefix="/washer",
@@ -32,7 +23,6 @@ def get_my_jobs(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
     service = BookingService(db)
 
     return service.get_washer_bookings(
@@ -49,69 +39,62 @@ def accept_booking(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
     service = BookingService(db)
 
-    return service.update_status(
+    return service.accept_job(
         booking_id=booking_id,
-        new_status=BookingStatus.ACCEPTED,
-        current_user=current_user,
+        washer=current_user,
     )
 
 
 @router.patch(
-    "/bookings/{booking_id}/en-route",
+    "/bookings/{booking_id}/start-trip",
     response_model=BookingResponse,
 )
-def en_route(
+def start_trip(
     booking_id: UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
     service = BookingService(db)
 
-    return service.update_status(
-        booking_id=booking_id,
-        new_status=BookingStatus.EN_ROUTE,
-        current_user=current_user,
-    )
-
-@router.patch(
-    "/bookings/{booking_id}/arrived",
-    response_model=BookingResponse,
-)
-def arrived(
-    booking_id: UUID,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-
-    service = BookingService(db)
-
-    return service.update_status(
-        booking_id=booking_id,
-        new_status=BookingStatus.ARRIVED,
-        current_user=current_user,
+    return service.start_trip(
+        booking_id,
+        current_user,
     )
 
 
 @router.patch(
-    "/bookings/{booking_id}/start",
+    "/bookings/{booking_id}/arrive",
     response_model=BookingResponse,
 )
-def start_wash(
+def arrive(
     booking_id: UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
     service = BookingService(db)
 
-    return service.update_status(
-        booking_id=booking_id,
-        new_status=BookingStatus.IN_PROGRESS,
-        current_user=current_user,
+    return service.arrive(
+        booking_id,
+        current_user,
+    )
+
+
+@router.patch(
+    "/bookings/{booking_id}/start-washing",
+    response_model=BookingResponse,
+)
+def start_washing(
+    booking_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    service = BookingService(db)
+
+    return service.start_washing(
+        booking_id,
+        current_user,
     )
 
 
@@ -119,16 +102,14 @@ def start_wash(
     "/bookings/{booking_id}/complete",
     response_model=BookingResponse,
 )
-def complete_wash(
+def complete_job(
     booking_id: UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
     service = BookingService(db)
 
-    return service.update_status(
-        booking_id=booking_id,
-        new_status=BookingStatus.COMPLETED,
-        current_user=current_user,
+    return service.complete_job(
+        booking_id,
+        current_user,
     )

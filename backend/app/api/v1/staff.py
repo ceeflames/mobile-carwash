@@ -23,6 +23,7 @@ from app.schemas.staff import (
 from app.services.staff_service import (
     StaffService,
 )
+from app.schemas.staff import WasherAvailabilityUpdate
 
 from app.exceptions.custom_exceptions import (
     ForbiddenException,
@@ -100,7 +101,7 @@ def get_washers(
     ),
 ):
 
-    admin_required(current_user)
+    dispatcher_or_admin_required(current_user)
 
     service = StaffService(db)
 
@@ -124,3 +125,32 @@ def get_dispatchers(
     service = StaffService(db)
 
     return service.get_dispatchers()
+
+def dispatcher_or_admin_required(current_user: User):
+
+    print(f"Current user role: {current_user.role}")    
+    if current_user.role not in (
+        UserRole.DISPATCHER,
+        UserRole.ADMIN,
+        UserRole.SUPER_ADMIN,
+    ):
+        raise ForbiddenException(
+            "Dispatcher or Admin access required."
+        )
+    
+@router.patch(
+    "/availability",
+    response_model=StaffResponse,
+)
+def update_availability(
+    data: WasherAvailabilityUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    service = StaffService(db)
+
+    return service.update_washer_availability(
+        washer=current_user,
+        availability=data.availability,
+    )
